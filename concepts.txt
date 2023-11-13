@@ -1,0 +1,470 @@
+
+Introduction 
+====================
+- Mongo DB database store data in BSON document format which is a type of json format,
+- Mongo DB is a non- relational database. Here we don't have concept of tables and relations
+=====================
+- BSON Document Size
+---------------------
+The maximum BSON document size is 16 megabytes.
+The maximum document size helps ensure that a single document cannot use excessive amount of RAM or, during transmission, excessive amount of bandwidth. To store documents larger than the maximum size, MongoDB provides the GridFS API. See 
+mongofiles
+ and the documentation for your 
+driver
+ for more information about GridFS.
+============================
+Restrictions on Database Names for Unix and Linux Systems
+-----------------------------
+For MongoDB deployments running on Unix and Linux systems, database names cannot contain any of the following characters:
+
+/\. "$
+
+Also database names cannot contain the null character.
+
+Length of Database Names
+Database names cannot be empty and must have fewer than 64 characters.
+============================
+Restriction on Collection Names
+----------------------------
+Collection names should begin with an underscore or a letter character, and cannot:
+
+contain the $.
+
+be an empty string (e.g. "").
+
+contain the null character.
+
+begin with the system. prefix. (Reserved for internal use.)
+
+If your collection name includes special characters, such as the underscore character, or begins with numbers, then to access the collection use the db.getCollection() method in 
+mongosh
+ or a 
+similar method for your driver.
+==================================
+Restrictions on Field Names
+------------------------------
+Field names cannot contain the null character.
+
+The server permits storage of field names that contain dots (.) and dollar signs ($).
+
+MongodB 5.0 adds improved support for the use of ($) and (.) in field names. There are some restrictions. 
+See Field Name Considerations for more details.
+=====================================
+Restrictions on _id
+-------------------------------------
+The field name _id is reserved for use as a primary key; its value must be unique in the collection, is immutable, 
+and may be of any type other than an array. If the _id contains subfields, the subfield names cannot begin with a ($) symbol.
+===================================
+MongoDB does not support duplicate field names
+-------------------------------------
+The MongoDB Query Language is undefined over documents with duplicate field names. 
+BSON builders may support creating a BSON document with duplicate field names.
+ While the BSON builder may not throw an error, inserting these documents into MongoDB is not supported even if the insert succeeds. 
+ For example, inserting a BSON document with duplicate field names through a MongoDB driver may result in the driver silently
+  dropping the duplicate values prior to insertion.
+
+===================================
+Schema Validation
+----------------------
+Schema validation lets you create validation rules for your fields, such as allowed data types and value ranges.
+
+MongoDB uses a flexible schema model, 
+which means that documents in a collection do not need to have the same fields or data types by default. 
+Once you've established an application schema, you can use schema validation to ensure there are no unintended schema changes or improper data types.
+You can use schema validation in the following scenarios:
+
+For a users collection, ensure that the password field is only stored as a string. This validation prevents users from saving their password as an unexpected data type, like an image.
+
+For a sales collection, ensure that the item field belongs to a list of items that your store sells. This validation prevents a user from accidentally misspelling an item name when entering sales data.
+
+For a students collection, ensure that the gpa field is always a positive number. This validation catches typos during data entry.
+
+https://www.mongodb.com/docs/manual/core/schema-validation/
+===================================
+
+Database creation 
+-----------------
+- show database - // to list all existing databases in your mongodb server 
+- use database - // command to select a database from existing dbs or if does not exist then new db will be created by mongo 
+
+- db.createCollection(collectionname,options); this command is used to create a collection explicitly, options parameters contains list of 
+feature like validation we want to apply etc  
+
+- db.collectionName.insertOne({fieldname:value}) // this command is used to create  collection if does not exist already and insert field 
+
+if collection does not contain any data then it will not be visible 
+
+===================
+CRUD operations
+=======================
+
+Create/insert commands 
+
+- insert more than one document 
+
+db.collectionName.insertMany([{
+    item: 'journal',
+    qty: 25,
+    size: { h: 14, w: 21, uom: 'cm' },
+    status: 'A'
+  },
+  {
+    item: 'notebook',
+    qty: 50,
+    size: { h: 8.5, w: 11, uom: 'in' },
+    status: 'A'
+  },
+  {
+    item: 'paper',
+    qty: 100,
+    size: { h: 8.5, w: 11, uom: 'in' },
+    status: 'D'
+  }])
+
+- insert single document
+
+  db.collectionName.insertOne({item: 'journal',
+    qty: 25,
+    size: { h: 14, w: 21, uom: 'cm' },
+    status: 'A'
+  })
+
+=========================
+  Read query
+- db.collectionName.find({})  // it will list/show all documents
+- db.mongopractice.findOne({item:'weddingcard'});
+  - findone returns documents without array
+  - Note: when we get more than one document, it comes under array of objects 
+
+- db.collectionName.find({qty:25})  // to match where condition like find a document where qty is 25 
+- db.collectionName.find({size: { h: 14, w: 21, uom: 'cm' }}) // display content which contains size with { h: 14, w: 21, uom: 'cm' } data fields 
+Note: in the above commands order of object fields shoudl be same as it is present in document 
+
+- db.collectionName.find({'size.w':21}) // display the document where size field contains object field name w with value 21 
+=========================
+operators 
+-------------------------
+search for value inside array $in
+- db.collectionName.find({size:{$in:['A','D']}})  // it will match the document where size field match value from ['A','D']
+
+
+//$lt- search for value less than 
+- db.collectionName.find({qty:{$lt:25}}) // it will display all documents where qty is less than 25
+
+// $gt - search for value greater than 
+-----------------------
+AND condition 
+--------------
+db.mongopractice.find({qty:{$lt:75},status:'A'});  // display document where qty is less than 75 and status is equal to 'A'
+==============
+OR condition
+=============
+- display all documents where either status is equal to a or qty is less than 45
+
+db.mongopractice.find({$or:[{status:'A'},{qty:{$lt:45}}]});
+
+
+- display qty and status fields of the documents where either status is 'A' or qty is less than 45
+db.mongopractice.find({$or:[{status:'A'},{qty:{$lt:45}}]}).projection({qty:1,status:1});
+
+{
+  _id: ObjectId("64c50d83aa62b31aaca0b146"),
+  qty: 25,
+  status: 'A'
+}
+=============
+AND with OR condition 
+=======================
+- display all documents where qty is less than or equal to 45 and either status is A or item starts with 'p' letter
+
+db.mongopractice.find({qty:{$lte:45}, $or:[{status:'A'},{item:/^p/}]});
+
+db.mongopractice.find({qty:{$lte:45}, $or:[{status:'A'},{item:{$regex:/^p/}}]});
+=========================
+Project- To limit the no of fields in the output query,
+----------------------------------------------------
+db.collectionName.find({qty:{$lt:75}}).projection({fieldName1:1,fieldName2:1}); 
+
+here in projection we specify the columns/fields that should be displayed in query output 
+
+example: query documents where qty is less than 75 and display only item and qty field 
+db.mongopractice.find({qty:{$lt:75}}).projection({item:1,qty:1});
+
+output:
+
+{
+  _id: ObjectId("64c50d83aa62b31aaca0b146"),
+  item: 'journal',
+  qty: 25
+}
+{
+  _id: ObjectId("64c50d83aa62b31aaca0b147"),
+  item: 'notebook',
+  qty: 50
+}
+
+Note: by default _id field is displayed with all results 
+
+To supress id field specify the fieldName with 0 value in projection 
+db.mongopractice.find({qty:{$lt:75}}).projection({item:1,qty:1,_id:0});
+
+example 
+{
+  item: 'journal',
+  qty: 25
+}
+{
+  item: 'notebook',
+  qty: 50
+}
+
+{
+  item: 'postcard',
+  qty: 45
+}
+====================================
+Return All But the Excluded Fields
+----------------------------------
+example - query the documents with all fields excluding item and id, where qty is less than 75 and 
+
+db.collection.find({qty:{$lt:75}}).projection({item:0,_id:0})
+
+Note:
+db.mongopractice.find({qty:{$lt:75}}).projection({status:1,item:0,_id:0});
+db.mongopractice.find({qty:{$lt:75}}).projection({status:1,item:0});
+this command is not valid and give "Cannot do exclusion on field item in inclusion projection" error 
+
+Note: we can either use to exclude specific fields and leave rest to display or we can use include specific fields only 
+https://www.mongodb.com/docs/manual/tutorial/project-fields-from-query-results/
+
+
+======================================
+
+Limit the output
+-------------------
+db.mongopractice.find({qty:{$lt:75}}).projection({status:0,item:0}).limit(2);
+
+
+
+it will show only first 2 query output not more than that 
+=======================================
+
+Return Specific Fields in Embedded Documents
+- display documents with item,qty and size with h field where qty is less than 45
+
+db.mongopractice.find({qty:{$lt:45}}).projection({item:1,qty:1,size:{h:1},});
+output
+{
+  _id: ObjectId("64c50d83aa62b31aaca0b146"),
+  item: 'journal',
+  qty: 25,
+  size: {
+    h: 14
+  }
+}
+
+- display documents with item,qty and size all fields except h field where qty is less than 45
+db.mongopractice.find({qty:{$lt:45}}).projection({item:1,qty:1,size:{w:1,uom:1}})
+
+==========================
+update commands 
+----------------------
+- normal syntax to update to update only first matched document  
+db.mongopractice.updateOne({item:'postcard'},{$set:{item:'weddingcard'}});
+
+- update item with weddingcard value and currentDate where item is postcard
+- db.mongopractice.updateOne({item:'postcard'},{$set:{item:'weddingcard'},$currentDate:{lastmodified:true}});
+-----------------------------
+update more than one documents
+------------------------------
+update item to buket of all documents where qty is less than 75 
+- db.mongopractice.updateMany({qty:{$lt:75}},{$set:{item:'buket'}});
+
+
+update size uom to inch of all documents where qty is less than 100
+- db.mongopractice.updateMany({qty:{$lt:100}},{$set:{size:{uom:'inch'}}})
+================================
+Delete commands
+
+db.mongopractice.deleteOne({item:'planner'});
+- it will delete only the first document where item is planner 
+and return and object which contains {acknowledge:true, deletedCountL:1}
+
+
+db.mongopractice.deleteMany({item:'planner'});
+
+- it will delete all document where item is planner 
+
+- db.mongopractice.findOneAndDelete({item:'planner'});
+  it will find the document where item is planner and delete it and return the deleted document 
+------------------------
+=========================
+sort and limit
+-----------------------
+db.mongopractice.find({}).skip(1);
+- to display all document except the 1st document
+
+skip is used to skip the entries from begining of the document while display 
+
+
+db.mongopractice.find({}).skip(1).limit(5);
+- to display all document from 2 to 5 
+
+limit is used to limit the no of document to be fetched 
+
+for example: it can be used in pagination 
+
+from 1 to 10 pages and on each page there will be 8 documents  
+
+on page 1 our query will be like 
+
+db.pages.find({}).skip(0).limit(8)
+db.pages.find({}).skip(9).limit(8)
+
+db.pages.find({}).skip(pageno-1*8+1).limit(8);
+-------------------------------
+sorting:
+
+db.mongopractice.find({}).skip(1).limit(5).sort({qty:1});
+
+Note: it will display document shorted with qty in ascendeing order and display 2 to 5 documents 
+
+
+
+
+
+{
+  _id: ObjectId("64c50bddaa62b31aaca0b145"),
+  name: 'sumit',
+  contact: '4567',
+  address: 'bangadesh'
+}
+
+{
+  _id: ObjectId("64c648e7b60671c0778693d7"),
+  item: 'mousepad',
+  qty: 25,
+  size: {
+    h: 19,
+    w: 22.85,
+    uom: 'cm'
+  },
+  status: 'P'
+}
+
+{
+  _id: ObjectId("64c648e7b60671c0778693db"),
+  item: 'postcard',
+  qty: 45,
+  size: {
+    h: 10,
+    w: 15.25,
+    uom: 'cm'
+  },
+  status: 'A'
+}
+
+{
+  _id: ObjectId("64c648e7b60671c0778693d8"),
+  item: 'notebook',
+  qty: 50,
+  size: {
+    h: 8.5,
+    w: 11,
+    uom: 'in'
+  },
+  status: 'P'
+}
+
+{
+  _id: ObjectId("64c648e7b60671c0778693dc"),
+  item: 'sketchbook',
+  qty: 80,
+  size: {
+    h: 14,
+    w: 21,
+    uom: 'cm'
+  },
+  status: 'A'
+}
+
+db.mongopractice.find({}).skip(1).limit(5).sort({qty:-1}); // -1 is used to sort in desc order 
+
+
+===============================
+Aggregation:
+
+An aggregation pipeline consists of one or more stages that process documents:
+
+Each stage performs an operation on the input documents. For example, a stage can filter documents, group documents, and calculate values.
+
+The documents that are output from a stage are passed to the next stage.
+
+An aggregation pipeline can return results for groups of documents. For example, return the total, average, maximum, and minimum values.
+
+
+db.orders.insertMany( [
+   { _id: 0, name: "Pepperoni", size: "small", price: 19,
+     quantity: 10, date: ISODate( "2021-03-13T08:14:30Z" ) },
+   { _id: 1, name: "Pepperoni", size: "medium", price: 20,
+     quantity: 20, date : ISODate( "2021-03-13T09:13:24Z" ) },
+   { _id: 2, name: "Pepperoni", size: "large", price: 21,
+     quantity: 30, date : ISODate( "2021-03-17T09:22:12Z" ) },
+   { _id: 3, name: "Cheese", size: "small", price: 12,
+     quantity: 15, date : ISODate( "2021-03-13T11:21:39.736Z" ) },
+   { _id: 4, name: "Cheese", size: "medium", price: 13,
+     quantity:50, date : ISODate( "2022-01-12T21:23:13.331Z" ) },
+   { _id: 5, name: "Cheese", size: "large", price: 14,
+     quantity: 10, date : ISODate( "2022-01-12T05:08:13Z" ) },
+   { _id: 6, name: "Vegan", size: "small", price: 17,
+     quantity: 10, date : ISODate( "2021-01-13T05:08:13Z" ) },
+   { _id: 7, name: "Vegan", size: "medium", price: 18,
+     quantity: 10, date : ISODate( "2021-01-13T05:10:13Z" ) }
+] )
+
+
+
+
+
+db.orders.aggregate( [
+   // Stage 1: Filter pizza order documents by pizza size
+   {
+      $match: { size: "medium" }
+   },
+   // Stage 2: Group remaining documents by pizza name and calculate total quantity
+   {
+      $group: { _id: "$name", totalQuantity: { $sum: "$quantity" } }
+   }
+] )
+
+
+
+
+{
+  _id: 'Pepperoni',
+  totalQuantity: 20
+}
+{
+_id: 'Cheese',
+  totalQuantity: 50
+}
+
+{
+_id: 'Vegan',
+  totalQuantity: 10
+}
+=================================
+Mongodb atlas:
+it is cloud mongo service, which can be used online 
+- it is maintained by mongodb
+- it has high availability, 
+- it never gets down and completely managed by mongo team. 
+
+- here we want create our own cluster and inside that we can create our dbs and collections and use it 
+
+- it can also be accessed by local mongodb software just we need to connect with url of the mongo db cloud service 
+
+
+
+
+
